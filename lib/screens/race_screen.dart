@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:prm232_mini_final_project/models/race_data.dart';
 
@@ -19,6 +21,104 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
 
   // Màu xe và ảnh xe
   final carColors = [Colors.red, Colors.blue, Colors.amber];
+
+  Timer? _raceTimer;
+  final Random _random = Random();
+
+  // Animation controller cho hiệu ứng đường chạy (scrolling road)
+  late AnimationController _roadController;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Controller cho animation đường chạy
+    _roadController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200), // Tăng tốc độ đường chạy (0.2s/chu kỳ)
+    );
+
+    // Tự động bắt đầu đua sau khi màn hình được build xong
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startRaceSequence();
+    });
+  }
+
+  @override
+  void dispose() {
+    _raceTimer?.cancel();
+    _roadController.dispose();
+    super.dispose();
+  }
+
+  void _startRaceSequence() async {
+    // Phase 1: Chờ 1 giây ở trạng thái "Get Ready"
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+
+    setState(() {
+      isRacing = true;
+    });
+    
+    // Bắt đầu animation đường chạy
+    _roadController.repeat(); 
+
+    // Phase 2: Bắt đầu đua
+    // Cập nhật vị trí mỗi 50ms
+    _raceTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        for (int i = 0; i < 3; i++) {
+          // Nếu đã có người thắng
+          if (raceFinished) {
+            // Xe thắng chạy vút qua (victory run)
+            if (winnerIndex == i) {
+               positions[i] += 0.04; // Chạy nhanh qua đích
+            } else {
+               // Các xe thua vẫn trôi nhẹ (quán tính) chứ không đừng khựng lại
+               positions[i] += 0.01;
+            }
+            continue;
+          }
+
+          // Tốc độ ngẫu nhiên: cơ bản + biến thiên
+          // Đảm bảo đua nhanh hơn (khoảng 2-3 giây)
+          double moveStep = 0.015 + _random.nextDouble() * 0.02;
+          positions[i] += moveStep;
+
+          // Kiểm tra về đích
+          if (positions[i] >= 1.0) {
+            // Xác nhận người thắng
+            setState(() {
+              raceFinished = true;
+              winnerIndex = i;
+            });
+            
+            // Cho phép chạy tiếp 2 giây mới dừng hẳn
+            Future.delayed(const Duration(seconds: 2), () {
+               if (mounted) _stopRaceCompletely(); 
+            });
+            break;
+          }
+        }
+      });
+    });
+  }
+
+  void _stopRaceCompletely() {
+    _raceTimer?.cancel();
+    _roadController.stop(); // Dừng đường chạy
+    setState(() {
+      isRacing = false;
+    });
+  }
+
+  // Hàm cũ _finishRace không dùng nữa, thay bằng _stopRaceCompletely
+  /* void _finishRace(int winner) { ... } */
 
   @override
   Widget build(BuildContext context) {
@@ -126,11 +226,14 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(13),
-        child: Row(
+        child: Column(
           children: [
-            // Phần lanes
+            // Vạch đích (Finish Line)
+            _buildFinishLine(),
+            
+            // Phần lanes (đường đua dọc)
             Expanded(
-              child: Column(
+              child: Row(
                 children: [
                   for (int i = 0; i < 3; i++) ...[
                     Expanded(child: _buildLane(i)),
@@ -139,141 +242,162 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            // Vạch đích
-            _buildFinishLine(),
           ],
         ),
       ),
     );
   }
 
-  // Viền vàng giữa các lane
   Widget _buildLaneDivider() {
-    return Container(height: 3, color: Colors.yellow.shade700);
+    return Container(width: 3, color: Colors.yellow.shade700);
   }
 
-  // Vạch đích sọc đen trắng kiểu bàn cờ (checkered)
   Widget _buildFinishLine() {
     return SizedBox(
-      width: 30,
-      child: Column(
+      height: 40, 
+      child: Row(
         children: [
-          for (int i = 0; i < 20; i++)
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      color: i % 2 == 0 ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      color: i % 2 == 0 ? Colors.black : Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          for (int i = 0; i < 10; i++) 
+             Expanded(
+               child: Column(
+                 children: [
+                   Expanded(
+                     child: Container(
+                       color: i % 2 == 0 ? Colors.white : Colors.black,
+                     ),
+                   ),
+                   Expanded(
+                     child: Container(
+                       color: i % 2 == 0 ? Colors.black : Colors.white,
+                     ),
+                   ),
+                   Expanded(
+                     child: Container(
+                       color: i % 2 == 0 ? Colors.white : Colors.black,
+                     ),
+                   ),
+                 ],
+               ),
+             ),
         ],
       ),
     );
   }
 
   Widget _buildLane(int index) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey.shade700, Colors.grey.shade800],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Vạch kẻ đường nét đứt ở giữa
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (int i = 0; i < 8; i++)
-                  Container(
-                    width: 25,
-                    height: 3,
-                    margin: const EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Tính toán vị trí xe
+        double trackHeight = constraints.maxHeight; 
+        double carPosition = positions[index] * trackHeight;
+        
+        // Rung lắc nhẹ khi đang đua (Vibration)
+        double jitterX = 0;
+        if (isRacing) {
+          jitterX = (_random.nextDouble() - 0.5) * 2.0; // +/- 1.0 pixel
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              colors: [Colors.grey.shade700, Colors.grey.shade800],
             ),
           ),
+          child: Stack(
+            clipBehavior: Clip.none, // Cho phép xe chạy lố lên vạch đích (overflow)
+            children: [
+              // Vạch kẻ đường (Road Markings) - Animated Scrolling
+              AnimatedBuilder(
+                animation: _roadController,
+                builder: (context, child) {
+                  // Di chuyển từ -40 đến 0
+                  return Transform.translate(
+                    offset: Offset(0, _roadController.value * 50), 
+                    child: child,
+                  );
+                },
+                child: Column(
+                  children: [
+                    // Vẽ dư ra một chút ở trên để khi scroll xuống không bị hở
+                    for (int i = -1; i < 15; i++)
+                      Container(
+                        width: 3,
+                        height: 30,
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
 
-          // Xe đua (dùng LayoutBuilder để tính vị trí theo progress)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              double trackWidth = constraints.maxWidth - 100;
-              double carPosition = positions[index] * trackWidth;
-
-              return Positioned(
-                left: 10 + carPosition,
-                top: 0,
-                bottom: 0,
+              // Xe đua (Car) - Positioned giờ là con trực tiếp của Stack
+              Positioned(
+                bottom: 10 + carPosition, 
+                left: jitterX,
+                right: jitterX,
                 child: _buildCar(index),
-              );
-            },
-          ),
+              ),
 
-          // Trophy cho người thắng
-          if (raceFinished && winnerIndex == index)
-            const Positioned(
-              right: 45,
-              top: 0,
-              bottom: 0,
-              child: Center(child: Text('🏆', style: TextStyle(fontSize: 28))),
-            ),
-        ],
-      ),
+              // Trophy
+              if (raceFinished && winnerIndex == index)
+                const Positioned(
+                  top: 10,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: Text('🏆', style: TextStyle(fontSize: 28))),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // Widget xe đua tách riêng
   Widget _buildCar(int index) {
     return Center(
-      child: Container(
-        width: 70,
-        height: 45,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: carColors[index].withValues(alpha: 0.4),
-              blurRadius: isRacing ? 12 : 5,
-              spreadRadius: isRacing ? 2 : 1,
+      child: RotatedBox(
+        quarterTurns: 3, 
+        child: Container(
+          width: 70,
+          height: 45,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: carColors[index].withValues(alpha: 0.4),
+                blurRadius: isRacing ? 12 : 5,
+                spreadRadius: isRacing ? 2 : 1,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              widget.raceData.carImages[index],
+              width: 70,
+              height: 45,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 70,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: carColors[index],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.directions_car,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                );
+              },
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.asset(
-            widget.raceData.carImages[index],
-            width: 70,
-            height: 45,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) {
-              return Container(
-                width: 70,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: carColors[index],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.directions_car,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              );
-            },
           ),
         ),
       ),
@@ -298,7 +422,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icon xe + tiền cược + phần trăm
+                    // Icon xe + tiền cược
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -306,7 +430,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                           widget.raceData.carImages[i],
                           width: 30,
                           height: 20,
-                          errorBuilder: (_, __, ___) => Icon(
+                          errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.directions_car,
                             color: carColors[i],
                             size: 20,
@@ -332,34 +456,17 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${(positions[i] * 100).toInt()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    // Progress bar
-                    Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: positions[i],
-                          backgroundColor: Colors.grey.shade700,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            carColors[i],
-                          ),
-                        ),
+                    const SizedBox(height: 5),
+                    // Removed Progress Bar, just kept the percentage text for clarity (or remove it too?)
+                    // Let's keep the text to show exact progress but remove the bar
+                    Text(
+                      '${(positions[i] * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
                   ],
