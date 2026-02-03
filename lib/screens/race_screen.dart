@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:prm232_mini_final_project/models/race_data.dart';
+import 'package:prm232_mini_final_project/screens/result_screen.dart';
 import '../services/audio_service.dart';
 
 class RaceScreen extends StatefulWidget {
@@ -122,9 +123,27 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   void _stopRaceCompletely() {
     _raceTimer?.cancel();
     _roadController.stop(); // Dừng đường chạy
+    if (!mounted) return;
+
     setState(() {
       isRacing = false;
     });
+
+    // Tạo kết quả và chuyển màn hình
+    final result = RaceResult(
+      winnerIndex: winnerIndex!,
+      bets: widget.raceData.bets,
+      racerNames: widget.raceData.racerNames,
+      carImages: widget.raceData.carImages,
+      previousMoney: widget.raceData.totalMoney,
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResultScreen(result: result),
+      ),
+    );
   }
 
   // Hàm cũ _finishRace không dùng nữa, thay bằng _stopRaceCompletely
@@ -167,7 +186,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.amber.withValues(alpha: 0.5),
+                    color: Colors.amber.withOpacity(0.5),
                     blurRadius: 10,
                   ),
                 ],
@@ -192,7 +211,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
+                color: Colors.black.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
                   color: isRacing ? Colors.green : Colors.orange,
@@ -230,7 +249,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.grey.shade800.withValues(alpha: 0.95),
+        color: Colors.grey.shade800.withOpacity(0.95),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.white24, width: 2),
       ),
@@ -337,7 +356,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                         height: 30,
                         margin: const EdgeInsets.only(bottom: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Colors.white.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -379,7 +398,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: carColors[index].withValues(alpha: 0.4),
+                color: carColors[index].withOpacity(0.4),
                 blurRadius: isRacing ? 12 : 5,
                 spreadRadius: isRacing ? 2 : 1,
               ),
@@ -419,7 +438,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       margin: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
+        color: Colors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
