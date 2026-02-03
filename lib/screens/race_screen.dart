@@ -63,7 +63,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   }
 
   void _startRaceSequence() async {
-    // Phase 1: Chờ 1 giây ở trạng thái "Get Ready"
+    // Phase 1: Chờ 1 giây ở trạng thái \"Get Ready\"
     await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
@@ -491,7 +491,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                     // Removed Progress Bar, just kept the percentage text for clarity (or remove it too?)
                     // Let's keep the text to show exact progress but remove the bar
                     Text(
-                      '${(positions[i] * 100).toInt()}%',
+                      '${min(100, (positions[i] * 100).toInt())}%',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
