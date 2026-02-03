@@ -24,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     totalMoney = widget.initialMoney;
     controllers = List.generate(3, (_) => TextEditingController(text: '0'));
+    
+    // Phát background music khi vào Home Screen
+    AudioService().playBackgroundMusic();
   }
 
   @override
@@ -31,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var c in controllers) {
       c.dispose();
     }
+    // Dừng background music khi thoát Home Screen
+    AudioService().stopBackgroundMusic();
     super.dispose();
   }
 
@@ -42,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateBet(int index, int value) {
+    // Phát âm thanh click
+    AudioService().playClickSound();
+    
     setState(() {
       bets[index] = value.clamp(0, remainingMoney(index));
       controllers[index].text = bets[index].toString();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:prm232_mini_final_project/models/race_data.dart';
+import '../services/audio_service.dart';
 
 class RaceScreen extends StatefulWidget {
   final RaceData raceData;
@@ -32,6 +33,10 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     
+    // Dừng background music và bật engine sound
+    AudioService().stopBackgroundMusic();
+    AudioService().playEngineSound();
+    
     // Controller cho animation đường chạy
     _roadController = AnimationController(
       vsync: this,
@@ -48,6 +53,11 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   void dispose() {
     _raceTimer?.cancel();
     _roadController.dispose();
+    
+    // Dừng engine sound và bật lại background music
+    AudioService().stopEngineSound();
+    AudioService().playBackgroundMusic();
+    
     super.dispose();
   }
 

@@ -6,22 +6,27 @@ class AudioService {
   factory AudioService() => _instance;
   AudioService._internal();
 
+  final AudioPlayer _bgPlayer = AudioPlayer();
+  final AudioPlayer _enginePlayer = AudioPlayer();
+  final AudioPlayer _sfxPlayer = AudioPlayer(); // dùng chung cho click/win/lose
 
-  final AudioPlayer _bgPlayer = AudioPlayer();      // Nhạc nền
-  final AudioPlayer _enginePlayer = AudioPlayer();  // Tiếng động cơ
-  bool _isMuted = false;                            // Trạng thái tắt tiếng
-
+  bool _isMuted = false;
   bool get isMuted => _isMuted;
 
-  // Nhạc nền (Background)
+  /* ================= BACKGROUND MUSIC ================= */
+
   Future<void> playBackgroundMusic() async {
     if (_isMuted) return;
+    if (_bgPlayer.state == PlayerState.playing) return;
+
     try {
-      await _bgPlayer.setReleaseMode(ReleaseMode.loop); // Lặp lại liên tục
-      await _bgPlayer.setVolume(0.3);                   // Âm lượng 30%
-      await _bgPlayer.play(AssetSource('audio/background_music.mp3'));
+      await _bgPlayer.setReleaseMode(ReleaseMode.loop);
+      await _bgPlayer.setVolume(0.3);
+      await _bgPlayer.play(
+        AssetSource('audio/background_music.mp3'),
+      );
     } catch (e) {
-      debugPrint('Error playing background music: $e');
+      debugPrint('BG Music error: $e');
     }
   }
 
@@ -29,15 +34,20 @@ class AudioService {
     await _bgPlayer.stop();
   }
 
-  // Tiếng của động cơ xe
+  /* ================= ENGINE SOUND ================= */
+
   Future<void> playEngineSound() async {
     if (_isMuted) return;
+    if (_enginePlayer.state == PlayerState.playing) return;
+
     try {
-      await _enginePlayer.setReleaseMode(ReleaseMode.loop); // Lặp lại
-      await _enginePlayer.setVolume(0.5);                   // Âm lượng 50%
-      await _enginePlayer.play(AssetSource('audio/engine.mp3'));
+      await _enginePlayer.setReleaseMode(ReleaseMode.loop);
+      await _enginePlayer.setVolume(0.5);
+      await _enginePlayer.play(
+        AssetSource('audio/engine.mp3'),
+      );
     } catch (e) {
-      debugPrint('Error playing engine sound: $e');
+      debugPrint('Engine sound error: $e');
     }
   }
 
@@ -45,55 +55,47 @@ class AudioService {
     await _enginePlayer.stop();
   }
 
-  // Âm thanh nếu người chơi đặt cược có xe chiến thắng
-  Future<void> playWinSound() async {
+  /* ================= SFX ================= */
+
+  Future<void> _playSfx(String path, {double volume = 0.7}) async {
     if (_isMuted) return;
+
     try {
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/win.mp3'));
+      await _sfxPlayer.stop(); // tránh chồng âm
+      await _sfxPlayer.setVolume(volume);
+      await _sfxPlayer.play(AssetSource(path));
     } catch (e) {
-      debugPrint('Error playing win sound: $e');
+      debugPrint('SFX error ($path): $e');
     }
   }
 
-  // Âm thanh nếu xe người chơi cược thua cuộc
-  Future<void> playLoseSound() async {
-    if (_isMuted) return;
-    try {
-      final player = AudioPlayer();
-      await player.play(AssetSource('audio/lose.mp3'));
-    } catch (e) {
-      debugPrint('Error playing lose sound: $e');
-    }
-  }
+  Future<void> playWinSound() => _playSfx('audio/win.mp3');
+  Future<void> playLoseSound() => _playSfx('audio/lose.mp3');
+  Future<void> playClickSound() => _playSfx('audio/click.mp3', volume: 0.5);
 
+  /* ================= MUTE ================= */
 
-  // Tiếng Click
-  Future<void> playClickSound() async {
-    if (_isMuted) return;
-    try {
-      final player = AudioPlayer();
-      await player.setVolume(0.5);
-      await player.play(AssetSource('audio/click.mp3'));
-    } catch (e) {
-      debugPrint('Error playing click sound: $e');
-    }
-  }
-
-  // Bật/ Tắt âm thanh
-  void toggleMute() {
+  Future<void> toggleMute() async {
     _isMuted = !_isMuted;
+
     if (_isMuted) {
-      _bgPlayer.setVolume(0);
-      _enginePlayer.setVolume(0);
+      await _bgPlayer.pause();
+      await _enginePlayer.pause();
     } else {
-      _bgPlayer.setVolume(0.3);
-      _enginePlayer.setVolume(0.5);
+      if (_bgPlayer.state != PlayerState.playing) {
+        await playBackgroundMusic();
+      }
+      if (_enginePlayer.state != PlayerState.playing) {
+        await playEngineSound();
+      }
     }
   }
+
+  /* ================= DISPOSE ================= */
 
   void dispose() {
     _bgPlayer.dispose();
     _enginePlayer.dispose();
+    _sfxPlayer.dispose();
   }
 }
