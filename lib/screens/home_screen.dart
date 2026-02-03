@@ -34,8 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     for (var c in controllers) {
       c.dispose();
     }
-    // Dừng background music khi thoát Home Screen
-    AudioService().stopBackgroundMusic();
+    // Không cần dừng background music ở đây
+    // Để race_screen tự quản lý khi vào
     super.dispose();
   }
 

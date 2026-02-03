@@ -60,9 +60,9 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
     _raceTimer?.cancel();
     _roadController.dispose();
 
-    // Dừng engine sound và bật lại background music
+    // Chỉ dừng engine sound, không bật background music
+    // Để result_screen tự quản lý
     AudioService().stopEngineSound();
-    AudioService().playBackgroundMusic();
 
     super.dispose();
   }

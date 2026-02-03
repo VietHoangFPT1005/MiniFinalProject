@@ -30,6 +30,10 @@ class _ResultScreenState extends State<ResultScreen>
     newMoney = widget.result.calculateNewMoney();
     didWin = widget.result.bets[widget.result.winnerIndex] > 0;
 
+    // Dừng engine sound và bật lại background music
+    audioService.stopEngineSound();
+    audioService.playBackgroundMusic();
+
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 3));
 
