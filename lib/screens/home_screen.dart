@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.6)),
+          Container(color: Colors.black.withValues(alpha: 0.6)),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(25),
         border: Border.all(color: Colors.orange, width: 2),
       ),
@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.amber, width: 2),
       ),
@@ -169,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: carColors[index], width: 2),
       ),

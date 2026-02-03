@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 class AudioService {
   static final AudioService _instance = AudioService._internal();
@@ -20,7 +21,7 @@ class AudioService {
       await _bgPlayer.setVolume(0.3);                   // Âm lượng 30%
       await _bgPlayer.play(AssetSource('audio/background_music.mp3'));
     } catch (e) {
-      print('Error playing background music: $e');
+      debugPrint('Error playing background music: $e');
     }
   }
 
@@ -36,7 +37,7 @@ class AudioService {
       await _enginePlayer.setVolume(0.5);                   // Âm lượng 50%
       await _enginePlayer.play(AssetSource('audio/engine.mp3'));
     } catch (e) {
-      print('Error playing engine sound: $e');
+      debugPrint('Error playing engine sound: $e');
     }
   }
 
@@ -51,7 +52,7 @@ class AudioService {
       final player = AudioPlayer();
       await player.play(AssetSource('audio/win.mp3'));
     } catch (e) {
-      print('Error playing win sound: $e');
+      debugPrint('Error playing win sound: $e');
     }
   }
 
@@ -62,7 +63,7 @@ class AudioService {
       final player = AudioPlayer();
       await player.play(AssetSource('audio/lose.mp3'));
     } catch (e) {
-      print('Error playing lose sound: $e');
+      debugPrint('Error playing lose sound: $e');
     }
   }
 
@@ -75,7 +76,7 @@ class AudioService {
       await player.setVolume(0.5);
       await player.play(AssetSource('audio/click.mp3'));
     } catch (e) {
-      print('Error playing click sound: $e');
+      debugPrint('Error playing click sound: $e');
     }
   }
 
