@@ -18,8 +18,11 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   bool raceFinished = false;
   int? winnerIndex;
 
-  // Vị trí xe (0.0 -> 1.0)
+  // Vị trí xe (0.0 -> 1.0) - dùng cho animation
   List<double> positions = [0.0, 0.0, 0.0];
+
+  // Vị trí hiển thị cho status bar (freeze khi race kết thúc)
+  List<double> displayPositions = [0.0, 0.0, 0.0];
 
   // Màu xe và ảnh xe
   final carColors = [Colors.red, Colors.blue, Colors.amber];
@@ -33,15 +36,17 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    
+
     // Dừng background music và bật engine sound
     AudioService().stopBackgroundMusic();
     AudioService().playEngineSound();
-    
+
     // Controller cho animation đường chạy
     _roadController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200), // Tăng tốc độ đường chạy (0.2s/chu kỳ)
+      duration: const Duration(
+        milliseconds: 200,
+      ), // Tăng tốc độ đường chạy (0.2s/chu kỳ)
     );
 
     // Tự động bắt đầu đua sau khi màn hình được build xong
@@ -54,25 +59,25 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   void dispose() {
     _raceTimer?.cancel();
     _roadController.dispose();
-    
+
     // Dừng engine sound và bật lại background music
     AudioService().stopEngineSound();
     AudioService().playBackgroundMusic();
-    
+
     super.dispose();
   }
 
   void _startRaceSequence() async {
-    // Phase 1: Chờ 1 giây ở trạng thái \"Get Ready\"
+    // Phase 1: Chờ 1 giây ở trạng thái "Get Ready"
     await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
     setState(() {
       isRacing = true;
     });
-    
+
     // Bắt đầu animation đường chạy
-    _roadController.repeat(); 
+    _roadController.repeat();
 
     // Phase 2: Bắt đầu đua
     // Cập nhật vị trí mỗi 50ms
@@ -88,10 +93,10 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
           if (raceFinished) {
             // Xe thắng chạy vút qua (victory run)
             if (winnerIndex == i) {
-               positions[i] += 0.04; // Chạy nhanh qua đích
+              positions[i] += 0.04; // Chạy nhanh qua đích
             } else {
-               // Các xe thua vẫn trôi nhẹ (quán tính) chứ không đừng khựng lại
-               positions[i] += 0.01;
+              // Các xe thua vẫn trôi nhẹ (quán tính) chứ không đừng khựng lại
+              positions[i] += 0.01;
             }
             continue;
           }
@@ -100,18 +105,24 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
           // Đảm bảo đua nhanh hơn (khoảng 2-3 giây)
           double moveStep = 0.015 + _random.nextDouble() * 0.02;
           positions[i] += moveStep;
+          // Cập nhật display (chỉ khi chưa kết thúc)
+          displayPositions[i] = positions[i].clamp(0.0, 1.0);
 
           // Kiểm tra về đích
           if (positions[i] >= 1.0) {
-            // Xác nhận người thắng
+            // Xác nhận người thắng và FREEZE displayPositions
             setState(() {
               raceFinished = true;
               winnerIndex = i;
+              // Freeze vị trí hiển thị tại thời điểm kết thúc
+              displayPositions = positions
+                  .map((p) => p.clamp(0.0, 1.0))
+                  .toList();
             });
-            
+
             // Cho phép chạy tiếp 2 giây mới dừng hẳn
             Future.delayed(const Duration(seconds: 2), () {
-               if (mounted) _stopRaceCompletely(); 
+              if (mounted) _stopRaceCompletely();
             });
             break;
           }
@@ -259,7 +270,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
           children: [
             // Vạch đích (Finish Line)
             _buildFinishLine(),
-            
+
             // Phần lanes (đường đua dọc)
             Expanded(
               child: Row(
@@ -283,31 +294,31 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
 
   Widget _buildFinishLine() {
     return SizedBox(
-      height: 40, 
+      height: 40,
       child: Row(
         children: [
-          for (int i = 0; i < 10; i++) 
-             Expanded(
-               child: Column(
-                 children: [
-                   Expanded(
-                     child: Container(
-                       color: i % 2 == 0 ? Colors.white : Colors.black,
-                     ),
-                   ),
-                   Expanded(
-                     child: Container(
-                       color: i % 2 == 0 ? Colors.black : Colors.white,
-                     ),
-                   ),
-                   Expanded(
-                     child: Container(
-                       color: i % 2 == 0 ? Colors.white : Colors.black,
-                     ),
-                   ),
-                 ],
-               ),
-             ),
+          for (int i = 0; i < 10; i++)
+            Expanded(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Container(
+                      color: i % 2 == 0 ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      color: i % 2 == 0 ? Colors.black : Colors.white,
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      color: i % 2 == 0 ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -317,9 +328,9 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Tính toán vị trí xe
-        double trackHeight = constraints.maxHeight; 
+        double trackHeight = constraints.maxHeight;
         double carPosition = positions[index] * trackHeight;
-        
+
         // Rung lắc nhẹ khi đang đua (Vibration)
         double jitterX = 0;
         if (isRacing) {
@@ -335,38 +346,41 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
             ),
           ),
           child: Stack(
-            clipBehavior: Clip.none, // Cho phép xe chạy lố lên vạch đích (overflow)
+            clipBehavior:
+                Clip.none, // Cho phép xe chạy lố lên vạch đích (overflow)
             children: [
-              // Vạch kẻ đường (Road Markings) - Animated Scrolling
-              AnimatedBuilder(
-                animation: _roadController,
-                builder: (context, child) {
-                  // Di chuyển từ -40 đến 0
-                  return Transform.translate(
-                    offset: Offset(0, _roadController.value * 50), 
-                    child: child,
-                  );
-                },
-                child: Column(
-                  children: [
-                    // Vẽ dư ra một chút ở trên để khi scroll xuống không bị hở
-                    for (int i = -1; i < 15; i++)
-                      Container(
-                        width: 3,
-                        height: 30,
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(2),
+              // Vạch kẻ đường (Road Markings) - Animated Scrolling - CENTER trong lane
+              Center(
+                child: AnimatedBuilder(
+                  animation: _roadController,
+                  builder: (context, child) {
+                    // Di chuyển từ -40 đến 0
+                    return Transform.translate(
+                      offset: Offset(0, _roadController.value * 50),
+                      child: child,
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      // Vẽ dư ra một chút ở trên để khi scroll xuống không bị hở
+                      for (int i = -1; i < 15; i++)
+                        Container(
+                          width: 3,
+                          height: 30,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
               // Xe đua (Car) - Positioned giờ là con trực tiếp của Stack
               Positioned(
-                bottom: 10 + carPosition, 
+                bottom: 10 + carPosition,
                 left: jitterX,
                 right: jitterX,
                 child: _buildCar(index),
@@ -378,7 +392,9 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                   top: 10,
                   left: 0,
                   right: 0,
-                  child: Center(child: Text('🏆', style: TextStyle(fontSize: 28))),
+                  child: Center(
+                    child: Text('🏆', style: TextStyle(fontSize: 28)),
+                  ),
                 ),
             ],
           ),
@@ -390,7 +406,7 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
   Widget _buildCar(int index) {
     return Center(
       child: RotatedBox(
-        quarterTurns: 3, 
+        quarterTurns: 3,
         child: Container(
           width: 70,
           height: 45,
@@ -487,16 +503,39 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
-                    // Removed Progress Bar, just kept the percentage text for clarity (or remove it too?)
-                    // Let's keep the text to show exact progress but remove the bar
-                    Text(
-                      '${min(100, (positions[i] * 100).toInt())}%',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                    const SizedBox(height: 8),
+                    // Progress bar + percentage
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade800,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: displayPositions[i],
+                                backgroundColor: Colors.grey.shade700,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  carColors[i],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${(displayPositions[i] * 100).toInt()}%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
