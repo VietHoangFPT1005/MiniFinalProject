@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:prm232_mini_final_project/models/race_data.dart';
 import '../services/audio_service.dart';
+import 'result_screen.dart';
 
 class RaceScreen extends StatefulWidget {
   final RaceData raceData;
@@ -136,6 +137,22 @@ class _RaceScreenState extends State<RaceScreen> with TickerProviderStateMixin {
     setState(() {
       isRacing = false;
     });
+
+    // Navigate sang ResultScreen
+    if (winnerIndex != null) {
+      final result = RaceResult(
+        winnerIndex: winnerIndex!,
+        bets: widget.raceData.bets,
+        racerNames: widget.raceData.racerNames,
+        carImages: widget.raceData.carImages,
+        previousMoney: widget.raceData.totalMoney,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => ResultScreen(result: result)),
+      );
+    }
   }
 
   // Hàm cũ _finishRace không dùng nữa, thay bằng _stopRaceCompletely
